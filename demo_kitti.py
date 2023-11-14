@@ -138,14 +138,14 @@ if __name__ == '__main__':
     # config = edict(dconfig)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--chosen_snapshot', default='kitti_map10261814', type=str, help='snapshot dir') #>> kitti10251818
+    parser.add_argument('--chosen_snapshot', default='kitti10251818', type=str, help='snapshot dir')
     parser.add_argument('--inlier_ratio_threshold', default=0.05, type=float)
     parser.add_argument('--distance_threshold', default=0.10, type=float)
     parser.add_argument('--random_points', default=False, action='store_true')
     parser.add_argument('--num_points', default=500, type=int)
-    parser.add_argument('--generate_features', default='/media/vision/Seagate/DataSets/kitti_map/dataset/sequences', type=str)
-    parser.add_argument('--dataset_root', default='/media/vision/Seagate/DataSets/kitti_map/dataset/sequences', type=str)
-    parser.add_argument('--dataset_pose_root', default='/media/vision/Seagate/DataSets/kitti_map/dataset/poses', type=str)
+    parser.add_argument('--generate_features', default='/media/vision/Seagate/DataSets/kitti/dataset/sequences', type=str)
+    parser.add_argument('--dataset_root', default='/media/vision/Seagate/DataSets/kitti/dataset/sequences', type=str)
+    parser.add_argument('--dataset_pose_root', default='/media/vision/Seagate/DataSets/kitti/dataset/poses', type=str)
     args = parser.parse_args()
     if args.random_points:
         log_filename = f'geometric_registration/{args.chosen_snapshot}-rand-{args.num_points}.log'
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         format="")
 
 # /home/vision/forD3feat/D3Feat.pytorch/data/kitti/snapshot/kitti10250004
-    config_path = f'/home/vision/forD3feat/D3Feat.pytorch/data/kitti_map/snapshot/{args.chosen_snapshot}/config_kitti_map.json'
+    config_path = f'/home/vision/forD3feat/D3Feat.pytorch/data/kitti/snapshot/{args.chosen_snapshot}/config_kitti.json'
     config = json.load(open(config_path, 'r'))
     config = edict(config)
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     
     # make d3feat model
     model = KPFCNN(config).to('cuda')
-    model.load_state_dict(torch.load(f'/home/vision/forD3feat/D3Feat.pytorch/data/kitti_map/snapshot/{args.chosen_snapshot}/models/model_best_acc.pth')['state_dict'])
+    model.load_state_dict(torch.load(f'/home/vision/forD3feat/D3Feat.pytorch/data/kitti/snapshot/{args.chosen_snapshot}/models/model_best_acc.pth')['state_dict'])
     print(f"Load weight from snapshot/{args.chosen_snapshot}/models/model_best_acc.pth")
     model.eval()
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     #     os.mkdir(save_path)
     dset = KittiTestDatasetPKL(root=config.root,
                                 split='test',
-                                downsample=0.3,
+                                downsample=0.4,
                                 self_augment=False,
                                 num_node=config.num_node,
                                 augment_noise=config.augment_noise,
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     features_np = features.cpu().detach().numpy()[:,:3]
     scores_np = scores.cpu().detach().numpy()
     scores_np_t = copy.deepcopy(scores_np)
-    top_indices0 = np.argsort(scores_np_t[:, 0])[-500:]
+    top_indices0 = np.argsort(scores_np_t[:, 0])[-1000:]
     color0 = np.repeat(np.array([[1.0,0.8,0.8]]), len(scores_np), axis=0)
     # color0 = np.array([color0])
     # color0 = np.repeat(color0, 3, axis=1)
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     features, scores = model(inputs)
     features_np = features.cpu().detach().numpy()[:,:3]
     scores_np = scores.cpu().detach().numpy()
-    top_indices1 = np.argsort(scores_np[:, 0])[-500:]
+    top_indices1 = np.argsort(scores_np[:, 0])[-1000:]
     color1 = np.repeat(np.array([[0.8,0.8,1.0]]), len(scores_np), axis=0)
     # color1 = np.repeat(color1, 3, axis=1)
     
@@ -261,14 +261,9 @@ if __name__ == '__main__':
     theta = -np.pi/2  # -90도
 
     # Z축 주위의 회전 행렬 생성
-    # rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0, -10],
-    #                             [np.sin(theta), np.cos(theta), 0, 10],
-    #                             [0, 0, 1, 0], [0,0,0,1]])
-    
-    rotation_matrix = np.array([[1, 0, 0, -10],
-                                [0, 1, 0, 5],
-                                [0, 0, 1, 0], 
-                                [0,0,0,1]])
+    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0, -10],
+                                [np.sin(theta), np.cos(theta), 0, 10],
+                                [0, 0, 1, 0], [0,0,0,1]])
                                 
 
     for i in top_indices1:
@@ -301,7 +296,7 @@ if __name__ == '__main__':
     
 
     reg = o3d.pipelines.registration.registration_icp(
-            pcd_vis0, pcd_vis1, 1.0, np.eye(4),
+            pcd_k0, pcd_k1, 1.0, np.eye(4),
             o3d.pipelines.registration.TransformationEstimationPointToPoint(),
             o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-7, relative_rmse=1e-7, max_iteration=100000))
     pcd_vis0.transform(reg.transformation)

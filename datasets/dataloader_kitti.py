@@ -239,7 +239,7 @@ def get_dataloader(dataset, batch_size=2, num_workers=4, shuffle=True, neighborh
 
 
 if __name__ == '__main__':
-    from datasets.ThreeDMatch import  ThreeDMatchDataset, ThreeDMatchTestset
+    from datasets.KittiDataset import  KittiDataset
     from easydict import EasyDict as edict
     import json
     chosen_snap = 'D3Feat07272004_005'
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     for i in range(config.num_layers-1):
         config.architecture.append('nearest_upsample')
         config.architecture.append('unary')
-    dset = ThreeDMatchDataset(root='/ssd2/xuyang/3DMatch', downsample=0.05, config=config)
+    dset = KittiDataset(root='/home/swpark/D3feat.pytorch/data/kitti_map', downsample=0.3, config=config)
 
     dataloader, neighborhood_limits = get_dataloader(dset, batch_size=1, num_workers=10)
     import pdb

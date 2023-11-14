@@ -5,9 +5,11 @@ import torch
 from utils.timer import Timer, AverageMeter
 from utils.metrics import calculate_acc, calculate_iou
 
+os.environ["CUDA_VISIBLE_DEVICES"]= "1"
 
 class Trainer(object):
     def __init__(self, args):
+        os.environ["CUDA_VISIBLE_DEVICES"]= "1"
         self.config = args
         # parameters
         self.start_epoch = 0

@@ -15,6 +15,9 @@ from torch import nn
 import torch
 import numpy as np
 
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]= "1"
+
 if __name__ == '__main__':
     config = get_config()
     dconfig = vars(config)

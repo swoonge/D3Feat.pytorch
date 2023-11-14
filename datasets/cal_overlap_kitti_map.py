@@ -28,9 +28,9 @@ def loadPoses(self):
 class Kitti_cal_overlap(object):
     """
     Given point cloud fragments and corresponding pose in '{root}'.
-        1. Save the aligned point cloud pts in '{savepath}/3DMatch_{downsample}_points_ver2.pkl'
-        2. Calculate the overlap ratio and save in '{savepath}/3DMatch_{downsample}_overlap_ver2.pkl'
-        3. Save the ids of anchor keypoints and positive keypoints in '{savepath}/3DMatch_{downsample}_keypts_ver2.pkl'
+        1. Save the aligned point cloud pts in '{savepath}/3DMatch_{downsample}_points.pkl'
+        2. Calculate the overlap ratio and save in '{savepath}/3DMatch_{downsample}_overlap.pkl'
+        3. Save the ids of anchor keypoints and positive keypoints in '{savepath}/3DMatch_{downsample}_keypts.pkl'
     """
 
     # __init__ 메서드: 이 메서드는 클래스의 초기화를 처리합니다. 데이터셋의 루트 디렉토리 (root), 결과를 저장할 경로 (savepath), 
@@ -56,7 +56,7 @@ class Kitti_cal_overlap(object):
 
         # seq 목록 불러오기
         # if self.split == 'train': self.scene_list = ["00"]
-        if self.split == 'train': self.scene_list = ["00","01","02","03","04","05","06"]
+        if self.split == 'train': self.scene_list = ["00","01","02","03","04","05", "06"]
         elif self.split == 'val': self.scene_list = ["07","08"] 
         else: self.scene_list = ["09","10"] 
 
@@ -164,9 +164,8 @@ class Kitti_cal_overlap(object):
         pcd2 = open3d.geometry.PointCloud()
         pcd2 = pcd_mids[2*mid_idx]
 
-        T_accumulated = np.eye(4)
-
         if aligned is True:
+            T_accumulated = np.eye(4)
             for pcd_mid in first_half:
                 reg = open3d.pipelines.registration.registration_icp(
                     pcd0, pcd_mid, 2.0, np.eye(4),
@@ -191,7 +190,7 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
                 pcd1.transform(reg.transformation)
                 # 잘 됬는지 확인
-                # pcd0.transform(reg.transformation)
+                pcd0.transform(reg.transformation)
                 pcd1 = pcd1 + pcd_mid
                 pcd1 = pcd1.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
@@ -227,7 +226,6 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.TransformationEstimationPointToPoint(),
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
             pcd0.transform(reg.transformation)
-            T_accumulated = np.dot(T_accumulated, reg.transformation)
             
             # visualizer = open3d.visualization.Visualizer()
             # visualizer.create_window()
@@ -242,8 +240,6 @@ class Kitti_cal_overlap(object):
             if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST / 2:
                 return np.array(pcd0.points), np.array(pcd1.points), False
             self.T.append(T_accumulated)
-            restored_coordinates = np.linalg.inv(T_accumulated)
-            pcd0.transform(restored_coordinates)
         return np.array(pcd0.points), np.array(pcd2.points), True
 
     # load_all_ply 메서드: 이 메서드는 모든 .ply 파일을 로드하고, 이를 다운샘플링한 다음 메모리에 보관합니다. 
@@ -259,19 +255,13 @@ class Kitti_cal_overlap(object):
 
         for i, (idx0, idx1, idxlist) in enumerate(self.poses_pair):
             print(f"Load pts file... scan: {idx0}, {idx1}")
-            if idx0 in self.pts:
-                print(f"{idx0} aready in pts")
-                continue
-            if idx1 in self.pts:
-                print(f"{idx1} aready in pts")
-                continue
             root0 = os.path.join(self.root, idx0)
             root1 = os.path.join(self.root, idx1)
             root_list = []
             for a in idxlist:
                 a = a + f'.bin'
                 root_list.append(os.path.join(self.root, a))
-            pcd0, pcd1, flag= self.load_ply((root0 + f'.bin'), (root1 + f'.bin'), root_list, downsample=downsample, aligned=True)
+            pcd0, pcd1, flag = self.load_ply((root0 + f'.bin'), (root1 + f'.bin'), root_list, downsample=downsample, aligned=True)
             if flag:
                 self.pts[idx0] = pcd0
                 self.pts[idx1] = pcd1
@@ -289,12 +279,12 @@ class Kitti_cal_overlap(object):
 
     # get_matching_indices 메서드: 이 메서드는 두 개의 포인트 클라우드 간에 일치하는 포인트 쌍을 찾는 데 사용됩니다. 
     # 두 포인트 클라우드와 일치 기준(여기서는 거리)을 제공하면 일치하는 포인트 쌍의 인덱스를 반환합니다.
-    def get_matching_indices(self, anc_pts, pos_pts, T_idx ,search_voxel_size, K=None):
+    def get_matching_indices(self, anc_pts, pos_pts, search_voxel_size, K=None):
         match_inds = []
         bf_matcher = cv2.BFMatcher(cv2.NORM_L2)
         match = bf_matcher.match(anc_pts, pos_pts)
         for match_val in match:
-            if match_val.distance < search_voxel_size * 1.5:
+            if match_val.distance < search_voxel_size:
                 match_inds.append([match_val.queryIdx, match_val.trainIdx])
         return np.array(match_inds)
 
@@ -320,14 +310,14 @@ class Kitti_cal_overlap(object):
         scene_overlap = {}
         print(f"Begin processing scene")
         for i, key_idx in enumerate(self.pair_keys):
+            if i % 2 != 0: continue
             anc_pts = self.pts[key_idx[0]].astype(np.float32)
             pos_pts = self.pts[key_idx[1]].astype(np.float32)
-            
+
             try:
-                pass
                 # 이걸 keypts_pairs.pks에 저장하는 것!
                 # 일치하는 포인트 쌍의 인덱스를 반환
-                matching_01 = self.get_matching_indices(anc_pts, pos_pts, i, self.downsample)
+                matching_01 = self.get_matching_indices(anc_pts, pos_pts, self.downsample)
             except BaseException as e:
                 print(f"Something wrong with get_matching_indices {e} for {key_idx[0]}, {key_idx[1]}")
                 matching_01 = np.array([])

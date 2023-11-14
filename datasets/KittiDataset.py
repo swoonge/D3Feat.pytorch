@@ -39,7 +39,7 @@ class KittiDataset(data.Dataset):
                  root, 
                  split='train', 
                  num_node=16, 
-                 downsample=0.15, 
+                 downsample=0.3, 
                  self_augment=False, 
                  augment_noise=0.005,
                  augment_axis=1, 
@@ -67,8 +67,8 @@ class KittiDataset(data.Dataset):
         
         # load data
         # 결국 여기 들어있는 정보는 두 pointcloud 중에서 매칭 된 idx와 overlap된 비율
-        pts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_points.pkl')
-        keypts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_keypts.pkl')
+        pts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_points_ver2.pkl')
+        keypts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_keypts_ver2.pkl')
 
         print(pts_filename, keypts_filename)
 
@@ -189,8 +189,8 @@ class KittiTestDatasetPKL(data.Dataset):
         
         # load data
         # 결국 여기 들어있는 정보는 두 pointcloud 중에서 매칭 된 idx와 overlap된 비율
-        pts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_points.pkl')
-        keypts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_keypts.pkl')
+        pts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_points_ver2.pkl')
+        keypts_filename = join(self.root, f'kitti_{split}_{self.downsample:.3f}_keypts_ver2.pkl')
 
         print(pts_filename, keypts_filename)
 
