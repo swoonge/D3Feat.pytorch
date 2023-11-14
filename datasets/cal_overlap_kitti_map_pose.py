@@ -6,6 +6,7 @@ import open3d
 import cv2
 import time
 import copy
+import matplotlib.pyplot as plt
 
 def odometry_to_positions(odometry):
     T_w_cam0 = odometry.reshape(3, 4)
@@ -36,13 +37,18 @@ class Kitti_cal_overlap(object):
     # __init__ 메서드: 이 메서드는 클래스의 초기화를 처리합니다. 데이터셋의 루트 디렉토리 (root), 결과를 저장할 경로 (savepath), 
     # 데이터셋 분할 (split), 다운샘플링 크기 (downsample)를 인수로 받습니다. 이 메서드에서는 필요한 초기화 작업을 수행하고 데이터셋을 불러오는 데 사용됩니다.
     def __init__(self, root, pose_root, savepath, split, downsample):
+        # 초기 빈 그래프 생성
+        self.fig, self.ax = plt.subplots()
+        self.line, = self.ax.plot([])  # 빈 라인 생성
         self.root = root
         self.pose_root = pose_root
         self.savepath = savepath
         self.split = split
         self.downsample = downsample
         self.poses = {}
-        self.MIN_DIST = 30.0
+        self.MIN_DIST = 20.0
+        self.Num_of_splits = 3
+        self.crop_distance = 35
         self.poses_pair = []
         self.pair_keys = []
         self.T = []
@@ -92,6 +98,28 @@ class Kitti_cal_overlap(object):
         self.load_all_ply(downsample)
         self.cal_overlap(downsample)
 
+    def plot_3d_pointcloud(self, pointcloud):
+        self.fig, self.ax = plt.subplots()
+        self.line, = self.ax.plot([])  # 빈 라인 생성
+        self.fig = plt.figure(figsize=(8, 8))
+        self.ax = self.fig.add_subplot(111, projection='3d')
+
+        # 포인트 클라우드를 플로팅합니다.
+        self.ax.scatter(pointcloud[:, 0], pointcloud[:, 1], pointcloud[:, 2], c='b', marker='o')
+
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+        self.ax.set_title('3D Point Cloud')
+
+        plt.show()
+
+    def update_3d_pointcloud(self, new_pointcloud):
+        # 새로운 데이터로 갱신하고 플로팅합니다.
+        # self.clear_output(wait=True)
+        plt.close(self.fig)
+        self.plot_3d_pointcloud(new_pointcloud)
+
     def get_odometry(self, drive, indices=None, ext='.txt', return_all=False):
         data_path = self.pose_root + '/' + drive + '.txt'
         poses = np.loadtxt(data_path)
@@ -135,6 +163,8 @@ class Kitti_cal_overlap(object):
         xyz0 = xyzr0[:, :3]
         xyz1 = xyzr1[:, :3]
 
+        # self.update_3d_pointcloud(xyz0)
+
         pcd0 = open3d.geometry.PointCloud()
         pcd3 = open3d.geometry.PointCloud()
         pcd0.points = open3d.utility.Vector3dVector(xyz0)
@@ -152,17 +182,17 @@ class Kitti_cal_overlap(object):
             pcd_mids.append(pcd_mid)
         pcd_mids.append(pcd3)
 
-        mid_idx = len(pcd_mids) // 3  # 리스트의 중간 인덱스 계산
+        mid_idx = len(pcd_mids) // self.Num_of_splits  # 리스트의 중간 인덱스 계산
 
         # 중간을 기준으로 리스트를 나누기
         first_half = pcd_mids[:mid_idx]
-        second_half = pcd_mids[mid_idx+1:2*mid_idx]
-        last_half = pcd_mids[(2 * mid_idx)+1:]
+        second_half = pcd_mids[mid_idx:len(pcd_mids) - mid_idx]
+        last_half = pcd_mids[len(pcd_mids) - mid_idx:]
         
         pcd1 = open3d.geometry.PointCloud()
         pcd1 = pcd_mids[mid_idx]
         pcd2 = open3d.geometry.PointCloud()
-        pcd2 = pcd_mids[2*mid_idx]
+        pcd2 = pcd_mids[(self.Num_of_splits-1)*mid_idx]
 
         T_accumulated = np.eye(4)
 
@@ -176,33 +206,18 @@ class Kitti_cal_overlap(object):
                 pcd0 = pcd0 + pcd_mid
                 pcd0 = pcd0.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
-            
-            reg = open3d.pipelines.registration.registration_icp(
-                    pcd0, pcd1, 2.0, np.eye(4),
-                    open3d.pipelines.registration.TransformationEstimationPointToPoint(),
-                    open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
-            pcd0.transform(reg.transformation)
-            T_accumulated = np.dot(T_accumulated, reg.transformation)
 
             for pcd_mid in second_half:
                 reg = open3d.pipelines.registration.registration_icp(
                     pcd1, pcd_mid, 2.0, np.eye(4),
                     open3d.pipelines.registration.TransformationEstimationPointToPoint(),
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
-                pcd1.transform(reg.transformation)
                 # 잘 됬는지 확인
-                # pcd0.transform(reg.transformation)
+                pcd0.transform(reg.transformation)
+                pcd1.transform(reg.transformation)
                 pcd1 = pcd1 + pcd_mid
                 pcd1 = pcd1.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
-
-            reg = open3d.pipelines.registration.registration_icp(
-                    pcd1, pcd2, 2.0, np.eye(4),
-                    open3d.pipelines.registration.TransformationEstimationPointToPoint(),
-                    open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
-            pcd0.transform(reg.transformation)
-            pcd1.transform(reg.transformation)
-            T_accumulated = np.dot(T_accumulated, reg.transformation)
             
             for pcd_mid in last_half:
                 reg = open3d.pipelines.registration.registration_icp(
@@ -216,8 +231,8 @@ class Kitti_cal_overlap(object):
                 pcd2 = pcd2.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
 
-            pcd0, _ = pcd0.remove_statistical_outlier(nb_neighbors=100, std_ratio=0.5)
-            pcd2, _ = pcd2.remove_statistical_outlier(nb_neighbors=100, std_ratio=0.5)
+            pcd0, _ = pcd0.remove_statistical_outlier(nb_neighbors=30, std_ratio=0.6)
+            pcd2, _ = pcd2.remove_statistical_outlier(nb_neighbors=30, std_ratio=0.6)
 
             pcd0 = pcd0.voxel_down_sample(voxel_size=downsample)
             pcd2 = pcd2.voxel_down_sample(voxel_size=downsample)
@@ -228,22 +243,38 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
             pcd0.transform(reg.transformation)
             T_accumulated = np.dot(T_accumulated, reg.transformation)
+
+            # 무게 중심을 기준으로 +-25m 안쪽의 점을 크롭
+            centroid = pcd0.get_center()
+            crop_box = open3d.geometry.AxisAlignedBoundingBox(
+                min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
+                max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
+            )
+            pcd0 = pcd0.crop(crop_box)
+
+            centroid = pcd2.get_center()
+            crop_box = open3d.geometry.AxisAlignedBoundingBox(
+                min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
+                max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
+            )
+            pcd2 = pcd2.crop(crop_box)
             
-            visualizer = open3d.visualization.Visualizer()
-            visualizer.create_window()
-            pcd0.paint_uniform_color([1, 0, 0])
-            pcd2.paint_uniform_color([0, 0, 1])
-            visualizer.add_geometry(pcd0)
-            visualizer.add_geometry(pcd2)
-            visualizer.get_render_option().show_coordinate_frame = True
-            visualizer.run()
-            visualizer.destroy_window()
+            # visualizer = open3d.visualization.Visualizer()
+            # visualizer.create_window()
+            # pcd0.paint_uniform_color([1, 0, 0])
+            # pcd2.paint_uniform_color([0, 0, 1])
+            # visualizer.add_geometry(pcd0)
+            # visualizer.add_geometry(pcd2)
+            # visualizer.get_render_option().show_coordinate_frame = True
+            # visualizer.run()
+            # visualizer.destroy_window()
 
             if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST / 2:
                 return np.array(pcd0.points), np.array(pcd1.points), False
             self.T.append(T_accumulated)
-            restored_coordinates = np.linalg.inv(T_accumulated)
-            pcd0.transform(restored_coordinates)
+            ## 다시 원래 좌표계
+            # restored_coordinates = np.linalg.inv(T_accumulated)
+            # pcd0.transform(restored_coordinates)
         return np.array(pcd0.points), np.array(pcd2.points), True
 
     # load_all_ply 메서드: 이 메서드는 모든 .ply 파일을 로드하고, 이를 다운샘플링한 다음 메모리에 보관합니다. 
