@@ -2,13 +2,13 @@ import os
 import time
 import shutil
 import json 
-from config import get_config
+from config_kitti_map import get_config
 from easydict import EasyDict as edict
-from datasets.ThreeDMatch import ThreeDMatchDataset, ThreeDMatchTestset
+from datasets.KittiDataset import KittiDataset
 from trainer import Trainer
 from models.architectures import KPFCNN
 # from models.D3Feat import KPFCNN
-from datasets.dataloader import get_dataloader
+from datasets.dataloader_kitti import get_dataloader
 from utils.loss import ContrastiveLoss, DetLoss, CircleLoss
 from torch import optim
 from torch import nn
@@ -24,15 +24,15 @@ if __name__ == '__main__':
     os.makedirs(config.snapshot_dir, exist_ok=True)
     os.makedirs(config.tboard_dir, exist_ok=True)
     os.makedirs(config.save_dir, exist_ok=True)
-    shutil.copy2(os.path.join('.', 'training_3DMatch.py'), os.path.join(config.snapshot_dir, 'train.py'))
+    shutil.copy2(os.path.join('.', 'training_kitti_map.py'), os.path.join(config.snapshot_dir, 'train.py'))
     shutil.copy2(os.path.join('.', 'trainer.py'), os.path.join(config.snapshot_dir, 'trainer.py'))
     shutil.copy2(os.path.join('models', 'architectures.py'), os.path.join(config.snapshot_dir, 'model.py'))  # for the model setting.
     shutil.copy2(os.path.join('models', 'blocks.py'), os.path.join(config.snapshot_dir, 'conv.py'))  # for the conv implementation.
     shutil.copy2(os.path.join('utils', 'loss.py'), os.path.join(config.snapshot_dir, 'loss.py'))
-    shutil.copy2(os.path.join('datasets', 'ThreeDMatch.py'), os.path.join(config.snapshot_dir, 'dataset.py'))
+    shutil.copy2(os.path.join('datasets', 'KittiDataset.py'), os.path.join(config.snapshot_dir, 'dataset.py'))
     json.dump(
         config,
-        open(os.path.join(config.snapshot_dir, 'config.json'), 'w'),
+        open(os.path.join(config.snapshot_dir, 'config_kitti_map.json'), 'w'),
         indent=4,
     )
     if config.gpu_mode:
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     )
     
     # create dataset and dataloader
-    train_set = ThreeDMatchDataset(root=config.root,
+    train_set = KittiDataset(root=config.root,
                                         split='train',
                                         downsample=config.downsample,
                                         self_augment=config.self_augment,
@@ -92,14 +92,15 @@ if __name__ == '__main__':
                                         augment_translation=config.augment_translation,
                                         config=config,
                                         )
+
     config.train_loader, neighborhood_limits = get_dataloader(dataset=train_set,
                                         batch_size=config.batch_size,
                                         shuffle=True,
                                         num_workers=config.num_workers,
                                         )
 
-    val_set = ThreeDMatchDataset(root=config.root,
-                                    split='train',
+    val_set = KittiDataset(root=config.root,
+                                    split='val',
                                     num_node=64,
                                     downsample=config.downsample,
                                     self_augment=config.self_augment,

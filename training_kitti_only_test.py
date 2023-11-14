@@ -2,13 +2,13 @@ import os
 import time
 import shutil
 import json 
-from config import get_config
+from config_kitti import get_config
 from easydict import EasyDict as edict
-from datasets.ThreeDMatch import ThreeDMatchDataset, ThreeDMatchTestset
+from datasets.KittiDataset import KittiDataset
 from trainer import Trainer
 from models.architectures import KPFCNN
 # from models.D3Feat import KPFCNN
-from datasets.dataloader import get_dataloader
+from datasets.dataloader_kitti import get_dataloader
 from utils.loss import ContrastiveLoss, DetLoss, CircleLoss
 from torch import optim
 from torch import nn
@@ -24,6 +24,7 @@ if __name__ == '__main__':
     os.makedirs(config.snapshot_dir, exist_ok=True)
     os.makedirs(config.tboard_dir, exist_ok=True)
     os.makedirs(config.save_dir, exist_ok=True)
+    # parser.add_argument('--chosen_snapshot', default='kitti10250004', type=str, help='snapshot dir')
     shutil.copy2(os.path.join('.', 'training_3DMatch.py'), os.path.join(config.snapshot_dir, 'train.py'))
     shutil.copy2(os.path.join('.', 'trainer.py'), os.path.join(config.snapshot_dir, 'trainer.py'))
     shutil.copy2(os.path.join('models', 'architectures.py'), os.path.join(config.snapshot_dir, 'model.py'))  # for the model setting.
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     shutil.copy2(os.path.join('datasets', 'ThreeDMatch.py'), os.path.join(config.snapshot_dir, 'dataset.py'))
     json.dump(
         config,
-        open(os.path.join(config.snapshot_dir, 'config.json'), 'w'),
+        open(os.path.join(config.snapshot_dir, 'config_kitti.json'), 'w'),
         indent=4,
     )
     if config.gpu_mode:
@@ -56,7 +57,11 @@ if __name__ == '__main__':
     config.architecture.append('last_unary')
     print("Network Architecture:\n", "".join([layer+'\n' for layer in config.architecture]))
 
-    config.model = KPFCNN(config)
+    # config.model = KPFCNN(config)
+    config.model = KPFCNN(config).to('cuda') # kitti10250004, kitti10251818
+    config.model.load_state_dict(torch.load(f'/home/vision/forD3feat/D3Feat.pytorch/data/kitti/snapshot/kitti10251818/models/model_best_acc.pth')['state_dict'])
+    print(f"Load weight from snapshot/kitti10251818/models/model_best_acc.pth")
+    config.model.eval()
     
     # create optimizer 
     if config.optimizer == 'SGD':
@@ -81,7 +86,7 @@ if __name__ == '__main__':
     )
     
     # create dataset and dataloader
-    train_set = ThreeDMatchDataset(root=config.root,
+    train_set = KittiDataset(root=config.root,
                                         split='train',
                                         downsample=config.downsample,
                                         self_augment=config.self_augment,
@@ -92,14 +97,15 @@ if __name__ == '__main__':
                                         augment_translation=config.augment_translation,
                                         config=config,
                                         )
+
     config.train_loader, neighborhood_limits = get_dataloader(dataset=train_set,
                                         batch_size=config.batch_size,
                                         shuffle=True,
                                         num_workers=config.num_workers,
                                         )
 
-    val_set = ThreeDMatchDataset(root=config.root,
-                                    split='train',
+    val_set = KittiDataset(root=config.root,
+                                    split='test',
                                     num_node=64,
                                     downsample=config.downsample,
                                     self_augment=config.self_augment,
@@ -144,4 +150,4 @@ if __name__ == '__main__':
     }
     
     trainer = Trainer(config)
-    trainer.train()
+    trainer.evaluate(00)

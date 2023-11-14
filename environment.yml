@@ -1,4 +1,4 @@
-name: d3feat
+name: d3py
 channels:
   - pytorch
   - open3d-admin
@@ -109,5 +109,5 @@ dependencies:
   - pip:
     - easydict==1.9
     - tqdm==4.48.2
-prefix: /home/altizure/anaconda3/envs/d3feat
+prefix: /home/vision/anaconda3/envs/d3py
 

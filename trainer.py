@@ -76,7 +76,7 @@ class Trainer(object):
         # for iter, inputs in enumerate(self.train_loader):
         for iter in range(num_iter):
             data_timer.tic()
-            inputs = train_loader_iter.next()
+            inputs = next(train_loader_iter)
             for k, v in inputs.items():  # load inputs to device.
                 if type(v) == list:
                     inputs[k] = [item.to(self.device) for item in v]
@@ -146,7 +146,7 @@ class Trainer(object):
         val_loader_iter = self.val_loader.__iter__()
         for iter in range(num_iter):
             data_timer.tic()
-            inputs = val_loader_iter.next()
+            inputs = next(val_loader_iter)
             for k, v in inputs.items():  # load inputs to device.
                 if type(v) == list:
                     inputs[k] = [item.to(self.device) for item in v]

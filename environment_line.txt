@@ -1,0 +1,15 @@
+name:
+  d3py
+channels:
+  -c pytorch open3d-admin conda-forge defaults
+dependencies:
+
+pip install easydict tqdm pyyaml addict plyfile opencv-python
+conda install -c open3d-admin open3d
+conda install _libgcc_mutex argon2-cffi attrs backcall blas bleach ca-certificates certifi cffi decorator defusedxml entrypoints freetype importlib-metadata
+conda install importlib_metadata intel-openmp ipykernel ipython ipython_genutils ipywidgets jedi jinja2 joblib jpeg jsonschema jupyter_client jupyter_core
+conda install lcms2 ld_impl_linux-64 libedit libffi libgcc-ng libgfortran-ng libpng libprotobuf libsodium libstdcxx-ng libtiff lz4-c markupsafe mistune mkl mkl-service mkl_fft mkl_random
+conda install nbconvert nbformat ncurses ninja notebook numpy numpy-base olefile openssl packaging pandoc pandocfilters parso pexpect yaml
+conda install pickleshare pillow pip prometheus_client prompt-toolkit protobuf ptyprocess pycparser pygments pyparsing pyrsistent python-dateutil
+conda install pyzmq readline scikit-learn scipy send2trash setuptools six sqlite tensorboardx terminado testpath threadpoolctl tk tornado
+conda install traitlets wcwidth webencodings wheel widgetsnbextension xz zeromq zipp zlib zstd pandas matplotlib
