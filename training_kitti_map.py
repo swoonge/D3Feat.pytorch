@@ -15,8 +15,8 @@ from torch import nn
 import torch
 import numpy as np
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= "1"
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]= "1"
 
 if __name__ == '__main__':
     config = get_config()
@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     config.train_loader, neighborhood_limits = get_dataloader(dataset=train_set,
                                         batch_size=config.batch_size,
-                                        shuffle=True,
+                                        shuffle=False,
                                         num_workers=config.num_workers,
                                         )
 
