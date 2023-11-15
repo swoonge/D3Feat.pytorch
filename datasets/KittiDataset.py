@@ -134,8 +134,8 @@ class KittiDataset(data.Dataset):
         src_points += np.random.rand(src_points.shape[0], 3) * self.augment_noise
         tgt_points += np.random.rand(tgt_points.shape[0], 3) * self.augment_noise
         scale = self.augment_scale_min + (self.augment_scale_max - self.augment_scale_min) * random.random()
-        src_points = scale * anc_points
-        tgt_points = scale * pos_points
+        src_points = scale * src_points
+        tgt_points = scale * tgt_points
         
 
         if len(corr) > self.num_node:
