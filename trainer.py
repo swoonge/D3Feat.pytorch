@@ -5,11 +5,8 @@ import torch
 from utils.timer import Timer, AverageMeter
 from utils.metrics import calculate_acc, calculate_iou
 
-os.environ["CUDA_VISIBLE_DEVICES"]= "1"
-
 class Trainer(object):
     def __init__(self, args):
-        os.environ["CUDA_VISIBLE_DEVICES"]= "1"
         self.config = args
         # parameters
         self.start_epoch = 0
@@ -45,7 +42,7 @@ class Trainer(object):
         # for k,v in res.items():
             # self.writer.add_scalar(f'val/{k}', v, 0)
         for epoch in range(self.start_epoch, self.max_epoch):
-            self.train_epoch(epoch + 1)
+            self.train_epoch(epoch + 1)          
 
             if (epoch + 1) % 1 == 0:
                 res = self.evaluate(epoch + 1)
@@ -127,7 +124,11 @@ class Trainer(object):
                 self.writer.add_scalar('train/D_pos', float(d_pos_meter.avg), curr_iter)
                 self.writer.add_scalar('train/D_neg', float(d_neg_meter.avg), curr_iter)
                 self.writer.add_scalar('train/Accuracy', float(acc_meter.avg), curr_iter)
+                current_lr = self.scheduler.get_last_lr()[0]
+                opcurrent_lr = self.optimizer.param_groups[0]['lr']
+                # print(f"current Learning Rate: {current_lr}, {opcurrent_lr}")
                 print(f"Epoch: {epoch} [{iter+1:4d}/{num_iter}] "
+                      f"rl: {current_lr}, {opcurrent_lr} "
                       f"desc loss: {desc_loss_meter.avg:.2f} "
                       f"det loss: {det_loss_meter.avg:.2f} "
                       f"acc:  {acc_meter.avg:.2f} "

@@ -44,6 +44,8 @@ class KittiDataset(data.Dataset):
                  augment_noise=0.005,
                  augment_axis=1, 
                  augment_rotation=1.0,
+                 augment_scale_min=0.9, 
+                 augment_scale_max=1.1,
                  augment_translation=0.001,
                  config=None,
                  ):
@@ -56,6 +58,9 @@ class KittiDataset(data.Dataset):
         self.augment_axis = augment_axis
         self.augment_rotation = augment_rotation
         self.augment_translation = augment_translation
+        self.augment_scale_min = augment_scale_min
+        self.augment_scale_max = augment_scale_max
+
         self.config = config
 
         # assert self_augment == False
@@ -128,6 +133,9 @@ class KittiDataset(data.Dataset):
         tgt_points = np.array(tgt_pcd.points)
         src_points += np.random.rand(src_points.shape[0], 3) * self.augment_noise
         tgt_points += np.random.rand(tgt_points.shape[0], 3) * self.augment_noise
+        scale = self.augment_scale_min + (self.augment_scale_max - self.augment_scale_min) * random.random()
+        src_points = scale * anc_points
+        tgt_points = scale * pos_points
         
 
         if len(corr) > self.num_node:

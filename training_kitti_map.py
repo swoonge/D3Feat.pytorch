@@ -92,6 +92,8 @@ if __name__ == '__main__':
                                         augment_noise=config.augment_noise,
                                         augment_axis=config.augment_axis, 
                                         augment_rotation=config.augment_rotation,
+                                        augment_scale_min=config.augment_scale_min, 
+                                        augment_scale_max=config.augment_scale_max,
                                         augment_translation=config.augment_translation,
                                         config=config,
                                         )
@@ -110,6 +112,8 @@ if __name__ == '__main__':
                                     augment_noise=config.augment_noise,
                                     augment_axis=config.augment_axis, 
                                     augment_rotation=config.augment_rotation,
+                                    augment_scale_min=config.augment_scale_min, 
+                                    augment_scale_max=config.augment_scale_max,
                                     augment_translation=config.augment_translation,
                                     config=config,
                                     )
