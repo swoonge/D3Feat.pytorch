@@ -42,7 +42,7 @@ class Kitti_cal_overlap(object):
         self.split = split
         self.downsample = downsample
         self.poses = {}
-        self.MIN_DIST = 25.0
+        self.MIN_DIST = 30.0
         self.poses_pair = []
         self.pair_keys = []
         self.T = []
@@ -227,15 +227,15 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
             pcd0.transform(reg.transformation)
             
-            # visualizer = open3d.visualization.Visualizer()
-            # visualizer.create_window()
-            # pcd0.paint_uniform_color([1, 0, 0])
-            # pcd2.paint_uniform_color([0, 0, 1])
-            # visualizer.add_geometry(pcd0)
-            # visualizer.add_geometry(pcd2)
-            # visualizer.get_render_option().show_coordinate_frame = True
-            # visualizer.run()
-            # visualizer.destroy_window()
+            visualizer = open3d.visualization.Visualizer()
+            visualizer.create_window()
+            pcd0.paint_uniform_color([1, 0, 0])
+            pcd2.paint_uniform_color([0, 0, 1])
+            visualizer.add_geometry(pcd0)
+            visualizer.add_geometry(pcd2)
+            visualizer.get_render_option().show_coordinate_frame = True
+            visualizer.run()
+            visualizer.destroy_window()
 
             if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST / 2:
                 return np.array(pcd0.points), np.array(pcd1.points), False
@@ -245,7 +245,7 @@ class Kitti_cal_overlap(object):
     # load_all_ply 메서드: 이 메서드는 모든 .ply 파일을 로드하고, 이를 다운샘플링한 다음 메모리에 보관합니다. 
     # 메모리에 로드된 데이터를 나중에 재사용하기 위해 .pkl 파일로 저장합니다.
     def load_all_ply(self, downsample):
-        pts_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_points.pkl')
+        pts_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_points_ver2.pkl')
         if exists(pts_filename):
             with open(pts_filename, 'rb') as file:
                 self.pts = pickle.load(file)
@@ -291,8 +291,8 @@ class Kitti_cal_overlap(object):
     # cal_overlap 메서드: 이 메서드는 포인트 클라우드 간의 겹침 비율을 계산하고, 겹침 비율이 일정 값 이상인 키포인트 쌍을 식별합니다. 
     # 겹침 정보 및 키포인트 쌍을 .pkl 파일로 저장합니다.
     def cal_overlap(self, downsample):
-        overlap_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_overlap.pkl')
-        keypts_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_keypts.pkl')
+        overlap_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_overlap_ver2.pkl')
+        keypts_filename = join(self.savepath, f'kitti_{self.split}_{downsample:.3f}_keypts_ver2.pkl')
         if exists(overlap_filename) and exists(keypts_filename):
             with open(overlap_filename, 'rb') as file:
                 self.overlap_ratio = pickle.load(file)
