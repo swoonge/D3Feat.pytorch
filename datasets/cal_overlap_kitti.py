@@ -43,6 +43,7 @@ class Kitti_cal_overlap(object):
         self.root = root
         self.pose_root = pose_root
         self.savepath = savepath
+        os.makedirs(self.savepath, exist_ok=True)
         self.split = split
         self.downsample = downsample
         self.poses = {}
@@ -62,8 +63,8 @@ class Kitti_cal_overlap(object):
         self.keypts_pairs = {}
 
         # seq 목록 불러오기
-        if self.split == 'train': self.scene_list = ["00"] # 테스트용
-        # if self.split == 'train': self.scene_list = ["00","01","02","03","04","05","06"]
+        # if self.split == 'train': self.scene_list = ["00"] # 테스트용
+        if self.split == 'train': self.scene_list = ["00","01","02","03","04","05","06"]
         elif self.split == 'val': self.scene_list = ["07","08"] 
         else: self.scene_list = ["09","10"] 
 
@@ -253,7 +254,8 @@ class Kitti_cal_overlap(object):
             # visualizer.run()
             # visualizer.destroy_window()
 
-            if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST / 2:
+            if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST *0.8:
+                print("icp process failed")
                 return np.array(pcd0.points), np.array(pcd1.points), False
             self.T.append(T_accumulated)
             ## 다시 원래 좌표계
@@ -369,7 +371,7 @@ if __name__ == '__main__':
     for t in ["train", "val", "test"]: # ["train", "val", "test"]: ['test']
         Kitti_cal_overlap(root='/media/vision/Seagate/DataSets/kitti/dataset/sequences',
                         pose_root='/media/vision/Seagate/DataSets/kitti/dataset/poses',
-                        savepath='../data/ds03_ver3',
+                        savepath='../data/kitti/ds03_ver3',
                         split=t,
                         downsample=0.3
                         )

@@ -74,8 +74,8 @@ class KittiDataset(data.Dataset):
         
         # load data
         # 결국 여기 들어있는 정보는 두 pointcloud 중에서 매칭 된 idx와 overlap된 비율
-        pts_filename = join(self.root, f'{dataset_version}/kitti_{split}_{self.downsample:.3f}_points.pkl')
-        keypts_filename = join(self.root, f'{dataset_version}/kitti_{split}_{self.downsample:.3f}_keypts.pkl')
+        pts_filename = join(self.root, f'{self.dataset_version}/kitti_{split}_{self.downsample:.3f}_points.pkl')
+        keypts_filename = join(self.root, f'{self.dataset_version}/kitti_{split}_{self.downsample:.3f}_keypts.pkl')
 
         print(pts_filename, keypts_filename)
 
@@ -169,12 +169,14 @@ class KittiTestset(data.Dataset):
     
     def __init__(self, 
                  root, 
+                 dataset_version='ds03_ver2',
                  downsample=0.3, 
                  config=None,
                  ):
         self.root = root
         self.downsample = downsample
         self.config = config
+        self.dataset_version = dataset_version
         
         # containers
         self.ids = []
@@ -182,8 +184,8 @@ class KittiTestset(data.Dataset):
         self.src_to_tgt = {}
         
         # load data
-        pts_filename = join(self.root, f'kitti_test_{self.downsample:.3f}_points.pkl')
-        keypts_filename = join(self.root, f'kitti_test_{self.downsample:.3f}_keypts.pkl')
+        pts_filename = join(self.root, f'{self.dataset_version}/kitti_test_{self.downsample:.3f}_points.pkl')
+        keypts_filename = join(self.root, f'{self.dataset_version}/kitti_test_{self.downsample:.3f}_keypts.pkl')
 
         print(pts_filename, keypts_filename)
 
