@@ -41,7 +41,7 @@ net_arg.add_argument('--modulated', type=str2bool, default=False)
 loss_arg = add_argument_group('Loss')
 loss_arg.add_argument('--dist_type', type=str, default='euclidean')
 loss_arg.add_argument('--desc_loss', type=str, default='circle', choices=['contrastive', 'circle'])
-loss_arg.add_argument('--pos_margin', type=float, default=0.2) #
+loss_arg.add_argument('--pos_margin', type=float, default=0.2) # default = 0.1
 loss_arg.add_argument('--neg_margin', type=float, default=1.4)
 loss_arg.add_argument('--m', type=float, default=0.1)
 loss_arg.add_argument('--log_scale', type=float, default=10)
@@ -92,7 +92,7 @@ experiment_id = "ds" + str(args.downsample) + "_data" + str(args.data_ver) + "/[
 snapshot_arg = add_argument_group('Snapshot')
 snapshot_arg.add_argument('--snapshot_dir', type=str, default=f'./data/kitti/snapshot/{experiment_id}')
 snapshot_arg.add_argument('--tboard_dir', type=str, default=f'./data/kitti/tensorboard/{experiment_id}')
-snapshot_arg.add_argument('--snapshot_interval', type=int, default=100)
+snapshot_arg.add_argument('--snapshot_interval', type=int, default=40)
 snapshot_arg.add_argument('--save_dir', type=str, default=os.path.join(f'./data/kitti/snapshot/{experiment_id}', 'models/'))
 
 def get_config():

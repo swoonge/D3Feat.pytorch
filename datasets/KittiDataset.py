@@ -37,7 +37,7 @@ class KittiDataset(data.Dataset):
     
     def __init__(self, 
                  root,
-                 dataset_version='ds03_ver2',
+                 dataset_version='ds03_ver3',
                  split='train',
                  num_node=16, 
                  downsample=0.3, 
@@ -169,7 +169,7 @@ class KittiTestset(data.Dataset):
     
     def __init__(self, 
                  root, 
-                 dataset_version='ds03_ver2',
+                 dataset_version='ds03_ver3',
                  downsample=0.3, 
                  config=None,
                  ):

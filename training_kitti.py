@@ -85,38 +85,34 @@ if __name__ == '__main__':
     
     # create dataset and dataloader
     train_set = KittiDataset(root=config.root,
-                                        split='train',
-                                        downsample=config.downsample,
-                                        self_augment=config.self_augment,
-                                        num_node=config.num_node,
-                                        augment_noise=config.augment_noise,
-                                        augment_axis=config.augment_axis, 
-                                        augment_rotation=config.augment_rotation,
-                                        augment_scale_min=config.augment_scale_min, 
-                                        augment_scale_max=config.augment_scale_max,
-                                        augment_translation=config.augment_translation,
-                                        config=config,
-                                        )
+                            split='train',
+                            dataset_version=config.dataset_version,
+                            downsample=config.downsample,
+                            self_augment=config.self_augment,
+                            num_node=config.num_node,
+                            augment_noise=config.augment_noise,
+                            augment_axis=config.augment_axis, 
+                            augment_rotation=config.augment_rotation,
+                            augment_scale_min=config.augment_scale_min, 
+                            augment_scale_max=config.augment_scale_max,
+                            augment_translation=config.augment_translation,
+                            config=config,
+                            )
 
     config.train_loader, neighborhood_limits = get_dataloader(dataset=train_set,
-                                        batch_size=config.batch_size,
-                                        shuffle=False,
-                                        num_workers=config.num_workers,
-                                        )
+                                                            batch_size=config.batch_size,
+                                                            shuffle=False,
+                                                            num_workers=config.num_workers,
+                                                            )
 
     val_set = KittiDataset(root=config.root,
-                                    split='val',
-                                    num_node=256,
-                                    downsample=config.downsample,
-                                    self_augment=config.self_augment,
-                                    augment_noise=config.augment_noise,
-                                    augment_axis=config.augment_axis, 
-                                    augment_rotation=config.augment_rotation,
-                                    augment_scale_min=config.augment_scale_min, 
-                                    augment_scale_max=config.augment_scale_max,
-                                    augment_translation=config.augment_translation,
-                                    config=config,
-                                    )
+                            split='val',
+                            dataset_version=config.dataset_version,
+                            num_node=256,
+                            downsample=config.downsample,
+                            self_augment=False,
+                            config=config,
+                            )
     
     config.val_loader,_ = get_dataloader(dataset=val_set,
                                         batch_size=config.batch_size,
