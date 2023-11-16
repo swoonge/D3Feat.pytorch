@@ -129,7 +129,7 @@ class Kitti_cal_overlap(object):
             for a in range(curr_time + 1, next_time, 1):
                 mid_ids_list.append(self.ids_list[a + self.ids_list_count[drive]])
             self.poses_pair.append((self.ids_list[curr_time + self.ids_list_count[drive]], self.ids_list[next_time + self.ids_list_count[drive]], mid_ids_list))
-            curr_time = (next_time + 1) - (2*(next_time - curr_time)//3)
+            curr_time = (next_time + 1) - (5*(next_time - curr_time)//7)
             mid_ids_list = []
             
     # load_ply 메서드: 이 메서드는 주어진 디렉토리에서 .ply 포맷의 3D 포인트 클라우드 데이터를 로드합니다. 

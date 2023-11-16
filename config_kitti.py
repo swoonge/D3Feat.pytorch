@@ -66,7 +66,7 @@ opt_arg.add_argument('--grad_clip_norm', type=float, default=100.0)
 
 # Dataset and dataloader configurations
 data_arg = add_argument_group('Data')
-data_arg.add_argument('--data_ver', type=str, default='ds03_ver3')
+data_arg.add_argument('--dataset_version', type=str, default='ds03_ver3')
 data_arg.add_argument('--root', type=str, default='./data/kitti/')
 data_arg.add_argument('--num_node', type=int, default=1024)
 data_arg.add_argument('--downsample', type=float, default=0.3)
@@ -87,7 +87,7 @@ misc_arg.add_argument('--verbose', type=str2bool, default=True)
 misc_arg.add_argument('--pretrain', type=str, default='')
 
 args = parser.parse_args()
-experiment_id = "ds" + str(args.downsample) + "_data" + str(args.data_ver) + "/[]" + time.strftime('%m%d%H%M') + "]_lr" + str(args.lr) + "_wd" + str(args.weight_decay) + "_m" + str(args.momentum) + "_bnm" + str(args.batch_norm_momentum) + "_pm" + str(args.pos_margin) + "_nm" + str(args.neg_margin) + "_sr" + str(args.safe_radius) + "_bs" + str(args.batch_size) + "_bn" + str(args.batch_norm_momentum)
+experiment_id = "ds" + str(args.downsample) + "_data" + str(args.dataset_version) + "/[]" + time.strftime('%m%d%H%M') + "]_lr" + str(args.lr) + "_wd" + str(args.weight_decay) + "_m" + str(args.momentum) + "_bnm" + str(args.batch_norm_momentum) + "_pm" + str(args.pos_margin) + "_nm" + str(args.neg_margin) + "_sr" + str(args.safe_radius) + "_bs" + str(args.batch_size) + "_bn" + str(args.batch_norm_momentum)
 # snapshot configurations
 snapshot_arg = add_argument_group('Snapshot')
 snapshot_arg.add_argument('--snapshot_dir', type=str, default=f'./data/kitti/snapshot/{experiment_id}')

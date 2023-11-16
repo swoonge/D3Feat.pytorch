@@ -2,7 +2,7 @@ import os
 import time
 import shutil
 import json 
-from config_kitti_map import get_config
+from config_kitti import get_config
 from easydict import EasyDict as edict
 from datasets.KittiDataset import KittiDataset
 from trainer import Trainer
