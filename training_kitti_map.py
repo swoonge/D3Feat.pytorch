@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     val_set = KittiDataset(root=config.root,
                                     split='val',
-                                    num_node=64,
+                                    num_node=256,
                                     downsample=config.downsample,
                                     self_augment=config.self_augment,
                                     augment_noise=config.augment_noise,
