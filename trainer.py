@@ -27,7 +27,6 @@ class Trainer(object):
         self.evaluation_metric = args.evaluation_metric
         self.metric_weight = args.metric_weight
         self.writer = SummaryWriter(log_dir=args.tboard_dir)
-        # self.writer = SummaryWriter(logdir=args.tboard_dir)
 
         if args.pretrain != '':
             self._load_pretrain(args.pretrain)
@@ -124,9 +123,7 @@ class Trainer(object):
                 self.writer.add_scalar('train/D_pos', float(d_pos_meter.avg), curr_iter)
                 self.writer.add_scalar('train/D_neg', float(d_neg_meter.avg), curr_iter)
                 self.writer.add_scalar('train/Accuracy', float(acc_meter.avg), curr_iter)
-                # current_lr = self.scheduler.get_last_lr()[0]
-                # opcurrent_lr = self.optimizer.param_groups[0]['lr']
-                # print(f"current Learning Rate: {current_lr}, {opcurrent_lr}")
+                self.writer.add_scalar('train/lr', float(self.optimizer.param_groups[0]['lr']), curr_iter)
                 print(f"Epoch: {epoch} [{iter+1:4d}/{num_iter}] "
                     #   f"rl: {current_lr}, {opcurrent_lr} "
                       f"desc loss: {desc_loss_meter.avg:.2f} "

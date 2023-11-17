@@ -87,7 +87,7 @@ misc_arg.add_argument('--verbose', type=str2bool, default=True)
 misc_arg.add_argument('--pretrain', type=str, default='')
 
 args = parser.parse_args()
-experiment_id = "ds" + str(args.downsample) + "_data" + str(args.dataset_version) + "/[]" + time.strftime('%m%d%H%M') + "]_lr" + str(args.lr) + "_wd" + str(args.weight_decay) + "_m" + str(args.momentum) + "_bnm" + str(args.batch_norm_momentum) + "_pm" + str(args.pos_margin) + "_nm" + str(args.neg_margin) + "_sr" + str(args.safe_radius) + "_bs" + str(args.batch_size) + "_bn" + str(args.batch_norm_momentum)
+experiment_id = "ds" + str(args.downsample) + "_data" + str(args.dataset_version) + "/[" + time.strftime('%m%d%H%M') + "]_lr" + str(args.lr) + "_wd" + str(args.weight_decay) + "_m" + str(args.momentum) + "_bnm" + str(args.batch_norm_momentum) + "_pm" + str(args.pos_margin) + "_nm" + str(args.neg_margin) + "_sr" + str(args.safe_radius) + "_bs" + str(args.batch_size) + "_bn" + str(args.batch_norm_momentum)
 # snapshot configurations
 snapshot_arg = add_argument_group('Snapshot')
 snapshot_arg.add_argument('--snapshot_dir', type=str, default=f'./data/kitti/snapshot/{experiment_id}')
