@@ -59,7 +59,12 @@ if __name__ == '__main__':
     config.architecture.append('last_unary')
     print("Network Architecture:\n", "".join([layer+'\n' for layer in config.architecture]))
 
-    config.model = KPFCNN(config)
+    
+# kitti/tensorboard/ds0.3_datads03_ver4/[12051050]_lr0.005_wd1e-05_m0.98_bnm0.98_pm0.1_nm1.4_sr0.1_bs1_bn0.98
+
+    config.model = KPFCNN(config).to('cuda')
+    config.model.load_state_dict(torch.load(f'/home/vision/ADD_prj/D3Feat.pytorch/data/kitti/snapshot/ds0.3_datads03_ver4/[12051050]_lr0.005_wd1e-05_m0.98_bnm0.98_pm0.1_nm1.4_sr0.1_bs1_bn0.98/models/model_best_acc.pth')['state_dict'])
+    print(f"Load weight from snapshot/ds0.3_datads03_ver4/[12051050]_lr0.005_wd1e-05_m0.98_bnm0.98_pm0.1_nm1.4_sr0.1_bs1_bn0.98/models/model_best_acc.pth")
     
     # create optimizer 
     if config.optimizer == 'SGD':
@@ -101,7 +106,7 @@ if __name__ == '__main__':
 
     config.train_loader, neighborhood_limits = get_dataloader(dataset=train_set,
                                                             batch_size=config.batch_size,
-                                                            shuffle=False,
+                                                            shuffle=True,
                                                             num_workers=config.num_workers,
                                                             )
 

@@ -169,7 +169,7 @@ class KittiTestset(data.Dataset):
     
     def __init__(self, 
                  root, 
-                 dataset_version='ds03_ver3',
+                 dataset_version='ds03_ver4',
                  downsample=0.3, 
                  config=None,
                  ):
@@ -184,8 +184,8 @@ class KittiTestset(data.Dataset):
         self.src_to_tgt = {}
         
         # load data
-        pts_filename = join(self.root, f'{self.dataset_version}/kitti_test_{self.downsample:.3f}_points.pkl')
-        keypts_filename = join(self.root, f'{self.dataset_version}/kitti_test_{self.downsample:.3f}_keypts.pkl')
+        pts_filename = join(self.root, f'{self.dataset_version}/kitti_train_{self.downsample:.3f}_points.pkl')
+        keypts_filename = join(self.root, f'{self.dataset_version}/kitti_train_{self.downsample:.3f}_keypts.pkl')
 
         print(pts_filename, keypts_filename)
 
@@ -228,7 +228,7 @@ class KittiTestset(data.Dataset):
         feat0 = np.ones_like(pts0[:, :1]).astype(np.float32)
         feat1 = np.ones_like(pts1[:, :1]).astype(np.float32)
 
-        return pts0, pts0, feat0, feat0, np.array([]), np.array([])
+        return pts0, pts1, feat0, feat1, np.array([]), np.array([])
         # return pts0, pts1, feat0, feat1, sel_corr, dist_keypts
             
     def __len__(self):

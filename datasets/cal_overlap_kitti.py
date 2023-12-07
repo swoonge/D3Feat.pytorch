@@ -48,12 +48,13 @@ class Kitti_cal_overlap(object):
         self.downsample = downsample
         self.poses = {}
         self.MIN_DIST = 25.0
-        self.Num_of_splits = 4
-        self.crop_distance = 40
+        self.Num_of_splits = 3
+        self.crop_distance = 35
         self.poses_pair = []
-        self.poses = {}
+        self.poses_pair_dic = {}
         self.pair_keys = []
         self.T = []
+        # self.poses_pair
 
         # dict: from id to pts.
         self.pts = {}
@@ -105,7 +106,9 @@ class Kitti_cal_overlap(object):
         poses = poses.reshape([-1,3,4])
         poses_matrix = np.zeros((poses.shape[0] , 4, 4))
         for i, pose in enumerate(poses): 
-            poses_matrix[i] = np.concatenate((pose, np.array([0.,0.,0.,1.]).reshape(1,4)))
+            mtx = np.concatenate((pose, np.array([0.,0.,0.,1.]).reshape(1,4)))
+            poses_matrix[i] = mtx
+            
         self.poses[drive] = poses_matrix
         
     def make_poses_pair(self, drive):
@@ -129,7 +132,9 @@ class Kitti_cal_overlap(object):
             for a in range(curr_time + 1, next_time, 1):
                 mid_ids_list.append(self.ids_list[a + self.ids_list_count[drive]])
             self.poses_pair.append((self.ids_list[curr_time + self.ids_list_count[drive]], self.ids_list[next_time + self.ids_list_count[drive]], mid_ids_list))
-            curr_time = (next_time + 1) - (5*(next_time - curr_time)//7)
+            self.poses_pair_dic[self.ids_list[curr_time + self.ids_list_count[drive]]] = self.poses[drive][curr_time]
+            self.poses_pair_dic[self.ids_list[next_time + self.ids_list_count[drive]]] = self.poses[drive][next_time]
+            curr_time = (next_time + 1) - (9*(next_time - curr_time)//11)
             mid_ids_list = []
             
     # load_ply 메서드: 이 메서드는 주어진 디렉토리에서 .ply 포맷의 3D 포인트 클라우드 데이터를 로드합니다. 
@@ -168,7 +173,7 @@ class Kitti_cal_overlap(object):
 
         mid_idx = len(pcd_mids) // self.Num_of_splits  # 리스트의 중간 인덱스 계산 -> 하나만 쓰려면 mid_idx = 1
         # mid_idx = 1
-
+        
         # 중간을 기준으로 리스트를 나누기
         first_half = pcd_mids[:mid_idx]
         second_half = pcd_mids[mid_idx:len(pcd_mids) - mid_idx]
@@ -180,6 +185,9 @@ class Kitti_cal_overlap(object):
         pcd2 = pcd_mids[(self.Num_of_splits-1)*mid_idx]
 
         T_accumulated = np.eye(4)
+        travel_dist = 0.0
+
+        # print(len(pcd_mids), len(first_half), len(second_half), len(last_half))
 
         if aligned is True:
             for pcd_mid in first_half:
@@ -188,9 +196,10 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.TransformationEstimationPointToPoint(),
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
                 pcd0.transform(reg.transformation)
+                travel_dist += np.linalg.norm(reg.transformation[:3,3])
                 pcd0 = pcd0 + pcd_mid
                 pcd0 = pcd0.voxel_down_sample(voxel_size=downsample)
-                T_accumulated = np.dot(T_accumulated, reg.transformation)
+                T_accumulated = np.dot(T_accumulated, reg.transformation)     
 
             for pcd_mid in second_half:
                 reg = open3d.pipelines.registration.registration_icp(
@@ -200,6 +209,7 @@ class Kitti_cal_overlap(object):
                 # 잘 됬는지 확인
                 pcd0.transform(reg.transformation)
                 pcd1.transform(reg.transformation)
+                travel_dist += np.linalg.norm(reg.transformation[:3,3])
                 pcd1 = pcd1 + pcd_mid
                 pcd1 = pcd1.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
@@ -212,12 +222,13 @@ class Kitti_cal_overlap(object):
                 pcd0.transform(reg.transformation)
                 pcd1.transform(reg.transformation)
                 pcd2.transform(reg.transformation)
+                travel_dist += np.linalg.norm(reg.transformation[:3,3])
                 pcd2 = pcd2 + pcd_mid
                 pcd2 = pcd2.voxel_down_sample(voxel_size=downsample)
                 T_accumulated = np.dot(T_accumulated, reg.transformation)
 
-            pcd0, _ = pcd0.remove_statistical_outlier(nb_neighbors=30, std_ratio=0.6)
-            pcd2, _ = pcd2.remove_statistical_outlier(nb_neighbors=30, std_ratio=0.6)
+            pcd0, _ = pcd0.remove_statistical_outlier(nb_neighbors=20, std_ratio=0.7)
+            pcd2, _ = pcd2.remove_statistical_outlier(nb_neighbors=20, std_ratio=0.7)
 
             pcd0 = pcd0.voxel_down_sample(voxel_size=downsample)
             pcd2 = pcd2.voxel_down_sample(voxel_size=downsample)
@@ -227,36 +238,45 @@ class Kitti_cal_overlap(object):
                     open3d.pipelines.registration.TransformationEstimationPointToPoint(),
                     open3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-12, relative_rmse=1e-12, max_iteration=100000))
             pcd0.transform(reg.transformation)
+            travel_dist += np.linalg.norm(reg.transformation[:3,3])
             T_accumulated = np.dot(T_accumulated, reg.transformation)
 
             # 무게 중심을 기준으로 일정 거리 안쪽의 점을 크롭
-            centroid = pcd0.get_center()
-            crop_box = open3d.geometry.AxisAlignedBoundingBox(
-                min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
-                max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
-            )
-            pcd0 = pcd0.crop(crop_box)
+            # centroid = pcd0.get_center()
+            # crop_box = open3d.geometry.AxisAlignedBoundingBox(
+            #     min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
+            #     max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
+            # )
+            # pcd0 = pcd0.crop(crop_box)
 
-            centroid = pcd2.get_center()
-            crop_box = open3d.geometry.AxisAlignedBoundingBox(
-                min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
-                max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
-            )
-            pcd2 = pcd2.crop(crop_box)
+            # centroid = pcd2.get_center()
+            # crop_box = open3d.geometry.AxisAlignedBoundingBox(
+            #     min_bound=[centroid[0] - self.crop_distance, centroid[1] - self.crop_distance, centroid[2] - self.crop_distance],
+            #     max_bound=[centroid[0] + self.crop_distance, centroid[1] + self.crop_distance, centroid[2] + self.crop_distance]
+            # )
+            # pcd2 = pcd2.crop(crop_box)
             
             # visualizer = open3d.visualization.Visualizer()
             # visualizer.create_window()
-            # pcd0.paint_uniform_color([1, 0, 0])
+            # pcd0.paint_uniform_color([1, 0.7, 0.7])
             # pcd2.paint_uniform_color([0, 0, 1])
             # visualizer.add_geometry(pcd0)
             # visualizer.add_geometry(pcd2)
             # visualizer.get_render_option().show_coordinate_frame = True
             # visualizer.run()
             # visualizer.destroy_window()
-
-            if np.linalg.norm(T_accumulated[:3, 3]) < self.MIN_DIST *0.8:
-                print("icp process failed")
-                return np.array(pcd0.points), np.array(pcd1.points), False
+            if travel_dist < self.MIN_DIST *0.8:
+                print("icp process failed, travel dist: ", travel_dist)
+                # visualizer = open3d.visualization.Visualizer()
+                # visualizer.create_window()
+                # pcd0.paint_uniform_color([1, 0.5, 0.5])
+                # pcd2.paint_uniform_color([0.5, 0.5, 1])
+                # visualizer.add_geometry(pcd0)
+                # visualizer.add_geometry(pcd2)
+                # visualizer.get_render_option().show_coordinate_frame = True
+                # visualizer.run()
+                # visualizer.destroy_window()
+                return np.array(pcd0.points), np.array(pcd2.points), False
             self.T.append(T_accumulated)
             ## 다시 원래 좌표계
             # restored_coordinates = np.linalg.inv(T_accumulated)
@@ -273,6 +293,7 @@ class Kitti_cal_overlap(object):
             print(f"Load pts file from {self.savepath}")
             return
         self.pts = {}
+        self.pts_org = {}
 
         for i, (idx0, idx1, idxlist) in enumerate(self.poses_pair):
             print(f"Load pts file... scan: {idx0}, {idx1}")
@@ -292,10 +313,10 @@ class Kitti_cal_overlap(object):
             if flag:
                 self.pts[idx0] = pcd0
                 self.pts[idx1] = pcd1
+                self.pts_org[idx0] = pcd0
+                self.pts_org[idx1] = pcd1
                 self.pair_keys.append([idx0, idx1])
                 if self.split =='test':
-                    self.pts[idx1] = pcd1
-                    self.pts[idx0] = pcd0
                     self.pair_keys.append([idx1, idx0])
             else:
                 print("this pair not align!")
@@ -351,8 +372,41 @@ class Kitti_cal_overlap(object):
             if len(anc_pts) == 0:
                 print("division by zero")
                 continue
+
+            distance_threshold = 40.0
+            mask = np.linalg.norm(anc_pts[matching_01[:,0],:3] - np.mean(anc_pts[matching_01[:,0],:3], axis=0), axis=1) < distance_threshold
+            matching_01 = matching_01[mask,:]
+
             overlap_ratio = len(matching_01) / len(anc_pts)
-            # print(overlap_ratio)
+
+            # 확인용 display 코드
+            # anc_pts_pcd = open3d.geometry.PointCloud()
+            # pos_pts_pcd = open3d.geometry.PointCloud()
+            # anc_pts_pcd.points = open3d.utility.Vector3dVector(anc_pts)
+            # pos_pts_pcd.points = open3d.utility.Vector3dVector(pos_pts)
+
+            # anc_pts_kp_pcd = open3d.geometry.PointCloud()
+            # pos_pts_kp_pcd = open3d.geometry.PointCloud()
+            # anc_pts_kp_pcd.points = open3d.utility.Vector3dVector(anc_pts[matching_01[:,0],:3])
+            # pos_pts_kp_pcd.points = open3d.utility.Vector3dVector(pos_pts[matching_01[:,1],:3])
+
+            # visualizer = open3d.visualization.Visualizer()
+            # visualizer.create_window()
+            # anc_pts_pcd.paint_uniform_color([1, 0.8, 0.8])
+            # pos_pts_pcd.paint_uniform_color([0.8, 0.8, 1])
+            # anc_pts_kp_pcd.paint_uniform_color([1, 0, 0])
+            # pos_pts_kp_pcd.paint_uniform_color([0, 0, 1])
+
+            # visualizer.add_geometry(anc_pts_pcd)
+            # visualizer.add_geometry(pos_pts_pcd)
+            # visualizer.add_geometry(anc_pts_kp_pcd)
+            # visualizer.add_geometry(pos_pts_kp_pcd)
+            # visualizer.get_render_option().show_coordinate_frame = True
+            # visualizer.run()
+            # visualizer.destroy_window()
+            # mask = np.linalg.norm(xyz1[:, :3], axis=1) > distance_threshold
+            # xyz1 = xyz1[mask]
+
             scene_overlap[f'{key_idx[0]}@{key_idx[1]}'] = overlap_ratio
             if overlap_ratio > 0.25:
                 self.keypts_pairs[f'{key_idx[0]}@{key_idx[1]}'] = matching_01.astype(np.int32)
@@ -366,12 +420,11 @@ class Kitti_cal_overlap(object):
         with open(keypts_filename, 'wb') as file:
             pickle.dump(self.keypts_pairs, file)
 
-
 if __name__ == '__main__':
     for t in ["train", "val", "test"]: # ["train", "val", "test"]: ['test']
         Kitti_cal_overlap(root='/media/vision/Seagate/DataSets/kitti/dataset/sequences',
                         pose_root='/media/vision/Seagate/DataSets/kitti/dataset/poses',
-                        savepath='../data/kitti/ds03_ver3',
+                        savepath='../data/kitti/ds03_ver4',
                         split=t,
                         downsample=0.3
                         )

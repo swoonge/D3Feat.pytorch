@@ -14,17 +14,17 @@ from models.architectures import KPFCNN
 from utils.timer import Timer, AverageMeter
 from datasets.KittiDataset import KittiTestset
 from datasets.dataloader import get_dataloader
-
+# /home/vision/ADD_prj/D3Feat.pytorch/data/kitti/snapshot/ds0.3_datads03_ver4/[11232115]_lr0.01_wd1e-05_m0.98_bnm0.98_pm0.1_nm1.4_sr0.3_bs1_bn0.98
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--chosen_snapshot', default='kitti10261814', type=str, help='snapshot dir')
+    parser.add_argument('--chosen_snapshot', default='ds0.3_datads03_ver4/[11232115]_lr0.01_wd1e-05_m0.98_bnm0.98_pm0.1_nm1.4_sr0.3_bs1_bn0.98', type=str, help='snapshot dir')
     parser.add_argument('--inlier_ratio_threshold', default=0.05, type=float)
     parser.add_argument('--distance_threshold', default=0.10, type=float)
     parser.add_argument('--random_points', default=False, action='store_true')
     parser.add_argument('--num_points', default=500, type=int)
     args = parser.parse_args()
 
-    config_path = f'/home/vision/ADD_prj/D3Feat.pytorch/data/kitti/snapshot/{args.chosen_snapshot}/config_kitti_map.json'
+    config_path = f'/home/vision/ADD_prj/D3Feat.pytorch/data/kitti/snapshot/{args.chosen_snapshot}/config_kitti.json'
     config = json.load(open(config_path, 'r'))
     config = edict(config)
 
@@ -66,39 +66,48 @@ if __name__ == '__main__':
     data_timer.toc()
     print(f"data time: {data_timer.avg:.2f}s ")
 
-    for _ in range(total_dataset_length//2):
+    for iter in range(total_dataset_length//2):
+        print(f"[iter {iter}]---------------------------------")
         inputs = next(dataloader_iter)
-        for k, v in inputs.items():  # load inputs to device.
+        print(inputs.keys())
+        inputs0 = inputs
+        inputs1 = inputs
+        inputs0[1] = inputs[0]
+        inputs0[3] = inputs[2]
+        inputs1[0] = inputs[1]
+        inputs1[2] = inputs[3]
+        for k, v in inputs0.items():  # load inputs to device.
             if type(v) == list:
-                inputs[k] = [item.to('cuda') for item in v]
+                inputs0[k] = [item.to('cuda') for item in v]
             else:
-                inputs[k] = v.to('cuda')
+                inputs0[k] = v.to('cuda')
+                # inputs1 = next(dataloader_iter)
+        for k, v in inputs1.items():  # load inputs to device.
+            if type(v) == list:
+                inputs1[k] = [item.to('cuda') for item in v]
+            else:
+                inputs1[k] = v.to('cuda')
         
-        pts0 = inputs['points'][0].cpu().numpy()
+        pts0 = inputs0['points'][0].cpu().numpy()
         model_timer.tic()
-        features, scores = model(inputs)
+        features, scores = model(inputs0)
         model_timer.toc()
         print(f"model time: {model_timer.avg:.2f}s ")
         features_np = features.cpu().detach().numpy()[:,:3]
         scores_np = scores.cpu().detach().numpy()
 
-        top_indices0 = np.argsort(scores_np[:, 0])[-500:]
+        top_indices0 = np.argsort(scores_np[:, 0])[-300:]
         color0 = np.repeat(np.array([[1.0,0.8,0.8]]), len(scores_np), axis=0)
         for i in top_indices0:
             color0[i] = [1,0,0]
 
-        inputs = next(dataloader_iter)
-        for k, v in inputs.items():  # load inputs to device.
-            if type(v) == list:
-                inputs[k] = [item.to('cuda') for item in v]
-            else:
-                inputs[k] = v.to('cuda')
+
         
-        pts1 = inputs['points'][0].cpu().numpy()
-        features, scores = model(inputs)
+        pts1 = inputs1['points'][0].cpu().numpy()
+        features, scores = model(inputs1)
         features_np = features.cpu().detach().numpy()[:,:3]
         scores_np = scores.cpu().detach().numpy()
-        top_indices1 = np.argsort(scores_np[:, 0])[-500:]
+        top_indices1 = np.argsort(scores_np[:, 0])[-300:]
         color1 = np.repeat(np.array([[0.8,0.8,1.0]]), len(scores_np), axis=0)
         
         ## 수동으로 조정하고 싶을 경우 사용 ##
